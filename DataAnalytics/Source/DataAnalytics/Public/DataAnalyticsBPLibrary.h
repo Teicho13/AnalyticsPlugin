@@ -51,12 +51,19 @@ class UDataAnalyticsBPLibrary : public UBlueprintFunctionLibrary
 
 	static void DataToStringImpl(FProperty* prop, void* structPtr);
 
+	static void ParseStructData(FProperty* prop, void* valuePtr);
+
 	static void ResetValues();
 
 	UFUNCTION(BlueprintCallable)
 	static FString GetHeaderNames();
+
+	UFUNCTION(BlueprintCallable)
+	static FString GetValues();
 	
 	static FString HeaderNames;
+	static FString Values;
 };
 
 	FString UDataAnalyticsBPLibrary::HeaderNames = "";
+	FString UDataAnalyticsBPLibrary::Values = "";
