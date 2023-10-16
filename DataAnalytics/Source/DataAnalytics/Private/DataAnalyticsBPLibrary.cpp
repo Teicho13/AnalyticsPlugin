@@ -8,21 +8,32 @@ UDataAnalyticsBPLibrary::UDataAnalyticsBPLibrary(const FObjectInitializer& Objec
 {
 }
 
+
+/**
+* iterate through all properties of a struct
+* @param prop    The struct property reflection data
+* @param structPtr The pointer to the struct
+*/
 void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 {
+	//Reset all data like headers and value strings
 	ResetValues();
 	
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Red, *prop->GetAuthoredName());
-	
 	FStructProperty* StructProperty = CastField<FStructProperty>(prop);
+	//Check if empty / null
 	if(StructProperty)
 	{
 		//Go trough Struct
 		for (TFieldIterator<FProperty> PropertyIt(StructProperty->Struct); PropertyIt; ++PropertyIt)
 		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, *PropertyIt->GetAuthoredName());
+			//Record header name
 			HeaderNames.Append(*PropertyIt->GetAuthoredName());
+			HeaderNames.Append(TEXT(", "));
 		}
+
+		//Remove last header comma
+		int cutSize = HeaderNames.Len() - 2;
+		HeaderNames.RemoveAt(cutSize);
 	}
 }
 
