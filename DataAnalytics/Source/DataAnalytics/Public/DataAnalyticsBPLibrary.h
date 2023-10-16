@@ -26,8 +26,12 @@ UCLASS()
 class UDataAnalyticsBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
-	
-	UFUNCTION(BlueprintCallable, CustomThunk , meta = (CustomStructureParam = "InStruct"))
+
+	/**
+	* Takes struct and returns the data into a string
+	* @param InStruct  Any struct to convert
+	*/
+	UFUNCTION(BlueprintCallable, CustomThunk , meta = (CustomStructureParam = "InStruct"), Category="DataAnalytics")
 	static void DataToString( UStruct* InStruct);
 	
 	DECLARE_FUNCTION(execDataToString)
@@ -49,16 +53,28 @@ class UDataAnalyticsBPLibrary : public UBlueprintFunctionLibrary
 		DataToStringImpl(StructProperty,StructPtr);
 	}
 
+	/**
+	* iterate through all properties of a struct
+	* @param prop    The struct property reflection data
+	* @param structPtr The pointer to the struct
+	*/
 	static void DataToStringImpl(FProperty* prop, void* structPtr);
 
+	/**
+	* Parse given property data 
+	* @param prop The property reflection data
+	* @param valuePtr The pointer to the struct value
+	*/
 	static void ParseStructData(FProperty* prop, void* valuePtr);
 
 	static void ResetValues();
 
-	UFUNCTION(BlueprintCallable)
+	//Return all header names from parsed data
+	UFUNCTION(BlueprintCallable,Category="DataAnalytics")
 	static FString GetHeaderNames();
 
-	UFUNCTION(BlueprintCallable)
+	//Return all values from parsed data
+	UFUNCTION(BlueprintCallable,Category="DataAnalytics")
 	static FString GetValues();
 	
 	static FString HeaderNames;

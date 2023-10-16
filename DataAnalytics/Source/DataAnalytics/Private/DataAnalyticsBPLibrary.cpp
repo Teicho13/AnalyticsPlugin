@@ -8,12 +8,6 @@ UDataAnalyticsBPLibrary::UDataAnalyticsBPLibrary(const FObjectInitializer& Objec
 {
 }
 
-
-/**
-* iterate through all properties of a struct
-* @param prop    The struct property reflection data
-* @param structPtr The pointer to the struct
-*/
 void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 {
 	//Reset all data like headers and value strings
@@ -45,18 +39,16 @@ void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 		int cutSize = HeaderNames.Len() - 2;
 		HeaderNames.RemoveAt(cutSize);
 
+		//Remove last Value comma
 		cutSize = Values.Len() - 2;
 		Values.RemoveAt(cutSize);
 	}
 }
 
-/**
-* Parse given property data 
-* @param prop The property reflection data
-* @param valuePtr The pointer to the struct value
-*/
 void UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
 {
+	//Supported Types
+	
 	float FloatValue;
 	int32 IntValue;
 	bool BoolValue;
@@ -74,6 +66,7 @@ void UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
 			Values.AppendInt(IntValue);
 			Values.Append(", ");
 		}
+		//Is a float
 		if(NumericProperty->IsFloatingPoint())
 		{
 			FloatValue = NumericProperty->GetFloatingPointPropertyValue(valuePtr);
