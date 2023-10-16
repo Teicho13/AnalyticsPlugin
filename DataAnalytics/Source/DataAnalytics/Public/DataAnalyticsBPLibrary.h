@@ -26,7 +26,37 @@ UCLASS()
 class UDataAnalyticsBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
+	
+	UFUNCTION(BlueprintCallable, CustomThunk , meta = (CustomStructureParam = "InStruct"))
+	static void DataToString( UStruct* InStruct);
+	
+	DECLARE_FUNCTION(execDataToString)
+	{
+		// Steps into the stack, walking to the next property in it
+		Stack.Step(Stack.Object, NULL);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Execute Sample function", Keywords = "DataAnalytics sample test testing"), Category = "DataAnalyticsTesting")
-	static float DataAnalyticsSampleFunction(float Param);
+		// Grab the last property found when we walked the stack
+		// This does not contains the property value, only its type information
+		FProperty* StructProperty = CastField<FProperty>(Stack.MostRecentProperty);
+
+		// Grab the base address where the struct actually stores its data
+		// This is where the property value is truly stored
+		void* StructPtr = Stack.MostRecentPropertyAddress;
+
+		// We need this to wrap up the stack
+		P_FINISH;
+
+		DataToStringImpl(StructProperty,StructPtr);
+	}
+
+	static void DataToStringImpl(FProperty* prop, void* structPtr);
+
+	static void ResetValues();
+
+	UFUNCTION(BlueprintCallable)
+	static FString GetHeaderNames();
+	
+	static FString HeaderNames;
 };
+
+	FString UDataAnalyticsBPLibrary::HeaderNames = "";
