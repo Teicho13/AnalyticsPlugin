@@ -2,6 +2,7 @@
 
 #include "DataAnalyticsBPLibrary.h"
 #include "DataAnalytics.h"
+#include "Misc/FileHelper.h"
 
 UDataAnalyticsBPLibrary::UDataAnalyticsBPLibrary(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
@@ -119,6 +120,16 @@ void UDataAnalyticsBPLibrary::ResetValues()
 {
 	HeaderNames.Empty();
 	Values.Empty();
+}
+
+void UDataAnalyticsBPLibrary::WriteToFile(FString FilePath, FString InString, bool& outSuccess)
+{
+	if(!FFileHelper::SaveStringToFile(InString,*FilePath))
+	{
+		outSuccess = false;
+		return;
+	}
+	outSuccess = true;
 }
 
 FString UDataAnalyticsBPLibrary::GetHeaderNames()
