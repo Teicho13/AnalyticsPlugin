@@ -43,6 +43,8 @@ void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 		//Remove last Value comma
 		cutSize = Values.Len() - 2;
 		Values.RemoveAt(cutSize);
+
+		CreateOutput(HeaderNames,Values);
 	}
 }
 
@@ -122,6 +124,11 @@ void UDataAnalyticsBPLibrary::ResetValues()
 	Values.Empty();
 }
 
+FString UDataAnalyticsBPLibrary::GetOutString()
+{
+	return OutString;
+}
+
 void UDataAnalyticsBPLibrary::WriteToFile(FString FilePath, FString InString, bool& outSuccess)
 {
 	if(!FFileHelper::SaveStringToFile(InString,*FilePath))
@@ -140,6 +147,16 @@ FString UDataAnalyticsBPLibrary::GetHeaderNames()
 FString UDataAnalyticsBPLibrary::GetValues()
 {
 	return Values;
+}
+
+void UDataAnalyticsBPLibrary::CreateOutput(FString HeadersStr, FString ValuesStr)
+{
+	OutString = "";
+
+	HeadersStr.Append("\n");
+	OutString = HeadersStr;
+
+	OutString.Append(ValuesStr);
 }
 
 

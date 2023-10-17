@@ -54,6 +54,10 @@ public:
 		DataToStringImpl(StructProperty,StructPtr);
 	}
 
+	//Return output string with all headers and values
+	UFUNCTION(BlueprintCallable)
+	static FString GetOutString();
+
 	UFUNCTION(BlueprintCallable, Category="DataAnalytics | FileIO")
 	static void WriteToFile(FString FilePath, FString InString, bool& outSuccess);
 	
@@ -67,6 +71,9 @@ public:
 	
 private:
 
+	//Join headers and values in a single output string
+	static void CreateOutput(FString HeadersStr, FString ValuesStr);
+	
 	/**
 	* iterate through all properties of a struct
 	* @param prop    The struct property reflection data
@@ -85,7 +92,9 @@ private:
 	
 	static FString HeaderNames;
 	static FString Values;
+	static FString OutString;
 };
 
 	FString UDataAnalyticsBPLibrary::HeaderNames = "";
 	FString UDataAnalyticsBPLibrary::Values = "";
+	FString UDataAnalyticsBPLibrary::OutString = "";
