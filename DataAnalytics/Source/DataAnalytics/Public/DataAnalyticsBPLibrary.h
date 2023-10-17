@@ -86,7 +86,7 @@ private:
 	* @param prop The property reflection data
 	* @param valuePtr The pointer to the struct value
 	*/
-	static void ParseStructData(FProperty* prop, void* valuePtr);
+	static FString ParseStructData(FProperty* prop, void* valuePtr);
 
 	static void ResetValues();
 	

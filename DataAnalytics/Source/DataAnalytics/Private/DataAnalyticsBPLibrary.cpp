@@ -25,6 +25,7 @@ void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 			HeaderNames.Append(*PropertyIt->GetAuthoredName());
 			HeaderNames.Append(TEXT(", "));
 
+			FString test = "";
 			//Check value dimensions
 			for (int i = 0; i < PropertyIt->ArrayDim; ++i)
 			{
@@ -32,7 +33,10 @@ void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 				void* ValuePtr = PropertyIt->ContainerPtrToValuePtr<void>(structPtr,i);
 
 				//Parse item
-				ParseStructData(*PropertyIt,ValuePtr);
+				
+				FString ParseString = ParseStructData(*PropertyIt,ValuePtr);
+				Values.Append(ParseString);
+				Values.Append(", ");
 			}
 		}
 
@@ -48,7 +52,7 @@ void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 	}
 }
 
-void UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
+FString UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
 {
 	//Supported Types
 	
@@ -58,6 +62,7 @@ void UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
 	FString StringValue;
 	FName NameValue;
 	FText TextValue;
+	FString TempString = "";
 
 	//Check for integer / float
 	if(FNumericProperty* NumericProperty = CastField<FNumericProperty>(prop))
@@ -66,16 +71,16 @@ void UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
 		if(NumericProperty->IsInteger())
 		{
 			IntValue = NumericProperty->GetSignedIntPropertyValue(valuePtr);
-			Values.AppendInt(IntValue);
-			Values.Append(", ");
+			TempString.AppendInt(IntValue);
+			return TempString;
 		}
 		//Is a float
 		if(NumericProperty->IsFloatingPoint())
 		{
 			FloatValue = NumericProperty->GetFloatingPointPropertyValue(valuePtr);
 			FString FloatStr = FString::SanitizeFloat(FloatValue);
-			Values.Append(FloatStr);
-			Values.Append(", ");
+			TempString.Append(FloatStr);
+			return TempString;
 		}
 	}
 	//Check for boolean
@@ -85,36 +90,61 @@ void UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
 		if(BoolValue)
 		{
 			//true
-			Values.Append("True, ");
-			Values.Append(", ");
+			TempString.Append("True");
+			return TempString;
 		}else
 		{
 			//false
-			Values.Append("False, ");
-			Values.Append(", ");
+			TempString.Append("False");
+			return TempString;
 		}
 	}
 	//Check for names
 	else if (FNameProperty* NameProperty = CastField<FNameProperty>(prop))
 	{
 		NameValue = NameProperty->GetPropertyValue(valuePtr);
-		Values.Append(NameValue.ToString());
-		Values.Append(", ");
+		TempString.Append(NameValue.ToString());
+		return TempString;
 	}
 	//Check for string
 	else if (FStrProperty* StringProperty = CastField<FStrProperty>(prop))
 	{
 		StringValue = StringProperty->GetPropertyValue(valuePtr);
-		Values.Append(StringValue);
-		Values.Append(", ");
+		TempString.Append(StringValue);
+		return TempString;
 	}
 	//Check for text
 	else if (FTextProperty* TextProperty = CastField<FTextProperty>(prop))
 	{
 		TextValue = TextProperty->GetPropertyValue(valuePtr);
-		Values.Append(TextValue.ToString());
-		Values.Append(", ");
+		TempString.Append(TextValue.ToString());
+		return TempString;
 	}
+	//Check for Array
+	else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(prop))
+	{
+		//Get a helper to go trough array
+		FScriptArrayHelper Helper(ArrayProperty,valuePtr);
+
+		//Add quotes to keep values together in a single cell
+		TempString.Append("\u0022");
+
+		//Loop trough and parse all array values
+		for (int i = 0, n = Helper.Num(); i < n; ++i)
+		{
+			TempString.Append(ParseStructData(ArrayProperty->Inner,Helper.GetRawPtr(i)));
+			//Check if it is last value otherwise add a seperator
+			if(i < n - 1)
+			{
+				TempString.Append(" | ");
+			}
+		}
+		//Close quotes
+		TempString.Append("\u0022");
+		
+		return TempString;
+	}
+	return "";
 	
 }
 
@@ -122,6 +152,7 @@ void UDataAnalyticsBPLibrary::ResetValues()
 {
 	HeaderNames.Empty();
 	Values.Empty();
+	OutString.Empty();
 }
 
 FString UDataAnalyticsBPLibrary::GetOutString()
