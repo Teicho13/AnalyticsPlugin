@@ -1,4 +1,5 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
+// UE_LOG(LogTemp, Warning, TEXT("This is the data: %s"), *FString(ReceivedData));
 
 #include "DataAnalyticsBPLibrary.h"
 #include "DataAnalytics.h"
@@ -9,12 +10,11 @@ UDataAnalyticsBPLibrary::UDataAnalyticsBPLibrary(const FObjectInitializer& Objec
 {
 }
 
-void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
+void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr, int layer)
 {
-	//Reset all data like headers and value strings
-	ResetValues();
-	
+	//Cast property to a struct
 	FStructProperty* StructProperty = CastField<FStructProperty>(prop);
+
 	//Check if empty / null
 	if(StructProperty)
 	{
@@ -22,37 +22,23 @@ void UDataAnalyticsBPLibrary::DataToStringImpl(FProperty* prop, void* structPtr)
 		for (TFieldIterator<FProperty> PropertyIt(StructProperty->Struct); PropertyIt; ++PropertyIt)
 		{
 			//Record header name
-			HeaderNames.Append(*PropertyIt->GetAuthoredName());
-			HeaderNames.Append(TEXT(", "));
+			UE_LOG(LogTemp, Warning, TEXT("Header: %s"), *PropertyIt->GetAuthoredName());
 
-			FString test = "";
 			//Check value dimensions
 			for (int i = 0; i < PropertyIt->ArrayDim; ++i)
 			{
-				//Get pointer to the value
+				//Get pointer to item in array
 				void* ValuePtr = PropertyIt->ContainerPtrToValuePtr<void>(structPtr,i);
 
 				//Parse item
-				
-				FString ParseString = ParseStructData(*PropertyIt,ValuePtr);
-				Values.Append(ParseString);
-				Values.Append(", ");
+				FString temp = ParseStructData(*PropertyIt, ValuePtr, layer);
 			}
 		}
-
-		//Remove last header comma
-		int cutSize = HeaderNames.Len() - 2;
-		HeaderNames.RemoveAt(cutSize);
-
-		//Remove last Value comma
-		cutSize = Values.Len() - 2;
-		Values.RemoveAt(cutSize);
-
-		CreateOutput(HeaderNames,Values);
 	}
+
 }
 
-FString UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr)
+FString UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr, int layer)
 {
 	//Supported Types
 	
@@ -72,7 +58,8 @@ FString UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr
 		{
 			IntValue = NumericProperty->GetSignedIntPropertyValue(valuePtr);
 			TempString.AppendInt(IntValue);
-			return TempString;
+			UE_LOG(LogTemp, Warning, TEXT("Parse: Is an Int"));
+			return "";
 		}
 		//Is a float
 		if(NumericProperty->IsFloatingPoint())
@@ -80,7 +67,8 @@ FString UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr
 			FloatValue = NumericProperty->GetFloatingPointPropertyValue(valuePtr);
 			FString FloatStr = FString::SanitizeFloat(FloatValue);
 			TempString.Append(FloatStr);
-			return TempString;
+			UE_LOG(LogTemp, Warning, TEXT("Parse: Is a Float"));
+			return "";
 		}
 	}
 	//Check for boolean
@@ -91,12 +79,14 @@ FString UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr
 		{
 			//true
 			TempString.Append("True");
-			return TempString;
+			UE_LOG(LogTemp, Warning, TEXT("Parse: Is a Bool (True)"));
+			return "";
 		}else
 		{
 			//false
 			TempString.Append("False");
-			return TempString;
+			UE_LOG(LogTemp, Warning, TEXT("Parse: Is a Bool (False)"));
+			return "";
 		}
 	}
 	//Check for names
@@ -104,60 +94,78 @@ FString UDataAnalyticsBPLibrary::ParseStructData(FProperty* prop, void* valuePtr
 	{
 		NameValue = NameProperty->GetPropertyValue(valuePtr);
 		TempString.Append(NameValue.ToString());
-		return TempString;
+		UE_LOG(LogTemp, Warning, TEXT("Parse: Is a Name"));
+		return "";
 	}
 	//Check for string
 	else if (FStrProperty* StringProperty = CastField<FStrProperty>(prop))
 	{
 		StringValue = StringProperty->GetPropertyValue(valuePtr);
 		TempString.Append(StringValue);
-		return TempString;
+		UE_LOG(LogTemp, Warning, TEXT("Parse: Is a String"));
+		return "";
 	}
 	//Check for text
 	else if (FTextProperty* TextProperty = CastField<FTextProperty>(prop))
 	{
 		TextValue = TextProperty->GetPropertyValue(valuePtr);
 		TempString.Append(TextValue.ToString());
-		return TempString;
+		UE_LOG(LogTemp, Warning, TEXT("Parse: Is a Text"));
+		return "";
 	}
-	//Check for Array
+	//Check for array
 	else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(prop))
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Parse: Is an Array"));
+
 		//Get a helper to go trough array
 		FScriptArrayHelper Helper(ArrayProperty,valuePtr);
-
-		//Add quotes to keep values together in a single cell
-		TempString.Append("\u0022");
-
+		
 		//Loop trough and parse all array values
 		for (int i = 0, n = Helper.Num(); i < n; ++i)
 		{
-			TempString.Append(ParseStructData(ArrayProperty->Inner,Helper.GetRawPtr(i)));
-			//Check if it is last value otherwise add a seperator
-			if(i < n - 1)
+			ParseStructData(ArrayProperty->Inner,Helper.GetRawPtr(i),layer + 1);
+		}
+
+		return "";
+	}
+	// Reading a nested struct
+	else if (prop)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Parse: Is a Struct"));
+
+		//Go into struct again
+		FStructProperty* StructProperty = CastField<FStructProperty>(prop);
+		if(StructProperty)
+		{
+			for (TFieldIterator<FProperty> PropertyIt(StructProperty->Struct); PropertyIt; ++PropertyIt)
 			{
-				TempString.Append(" | ");
+				UE_LOG(LogTemp, Warning, TEXT("Sub Header: %s"), *PropertyIt->GetAuthoredName());
+				//Check value dimensions
+				for (int i = 0; i < PropertyIt->ArrayDim; ++i)
+				{
+					void* ValuePtr = PropertyIt->ContainerPtrToValuePtr<void>(valuePtr,i);
+
+					FString temp = ParseStructData(*PropertyIt, ValuePtr, layer);
+				}
 			}
 		}
-		//Close quotes
-		TempString.Append("\u0022");
-		
-		return TempString;
+		return "";
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("PARSE: NO RESULTS"));
 	return "";
 	
 }
 
 void UDataAnalyticsBPLibrary::ResetValues()
 {
-	HeaderNames.Empty();
-	Values.Empty();
-	OutString.Empty();
+	FinalString.Empty();
 }
 
-FString UDataAnalyticsBPLibrary::GetOutString()
+FString UDataAnalyticsBPLibrary::GetFinalString()
 {
-	return OutString;
+	return FinalString;
 }
 
 void UDataAnalyticsBPLibrary::WriteToFile(FString FilePath, FString InString, bool& outSuccess)
@@ -170,24 +178,14 @@ void UDataAnalyticsBPLibrary::WriteToFile(FString FilePath, FString InString, bo
 	outSuccess = true;
 }
 
-FString UDataAnalyticsBPLibrary::GetHeaderNames()
+void UDataAnalyticsBPLibrary::CreateOutput(FString& outString)
 {
-	return HeaderNames;
-}
+	FinalString = "";
+	
+	/*FinalString = HeaderNames;
 
-FString UDataAnalyticsBPLibrary::GetValues()
-{
-	return Values;
-}
-
-void UDataAnalyticsBPLibrary::CreateOutput(FString HeadersStr, FString ValuesStr)
-{
-	OutString = "";
-
-	HeadersStr.Append("\n");
-	OutString = HeadersStr;
-
-	OutString.Append(ValuesStr);
+	FinalString.Append(Values);*/
+	outString = FinalString;
 }
 
 

@@ -51,50 +51,44 @@ public:
 		// We need this to wrap up the stack
 		P_FINISH;
 
-		DataToStringImpl(StructProperty,StructPtr);
+		//Reset all data like headers and value strings
+		ResetValues();
+		
+		DataToStringImpl(StructProperty,StructPtr, 0);
 	}
 
 	//Return output string with all headers and values
 	UFUNCTION(BlueprintCallable)
-	static FString GetOutString();
+	static FString GetFinalString();
 
 	UFUNCTION(BlueprintCallable, Category="DataAnalytics | FileIO")
 	static void WriteToFile(FString FilePath, FString InString, bool& outSuccess);
 	
-	//Return all header names from parsed data
-	UFUNCTION(BlueprintCallable,Category="DataAnalytics | Data")
-	static FString GetHeaderNames();
-
-	//Return all values from parsed data
-	UFUNCTION(BlueprintCallable,Category="DataAnalytics | Data")
-	static FString GetValues();
-	
+	//Join headers and values in a single output string
+	UFUNCTION(BlueprintCallable, Category="DataAnalytics | Data")
+	static void CreateOutput(FString& outString);
 private:
 
-	//Join headers and values in a single output string
-	static void CreateOutput(FString HeadersStr, FString ValuesStr);
+
 	
 	/**
 	* iterate through all properties of a struct
 	* @param prop    The struct property reflection data
 	* @param structPtr The pointer to the struct
 	*/
-	static void DataToStringImpl(FProperty* prop, void* structPtr);
-
+	static void DataToStringImpl(FProperty* prop, void* structPtr, int layer);
+	
 	/**
 	* Parse given property data 
 	* @param prop The property reflection data
 	* @param valuePtr The pointer to the struct value
 	*/
-	static FString ParseStructData(FProperty* prop, void* valuePtr);
+	static FString ParseStructData(FProperty* prop, void* valuePtr, int layer);
 
 	static void ResetValues();
 	
-	static FString HeaderNames;
-	static FString Values;
-	static FString OutString;
-};
+	static FString FinalString;
 
-	FString UDataAnalyticsBPLibrary::HeaderNames = "";
-	FString UDataAnalyticsBPLibrary::Values = "";
-	FString UDataAnalyticsBPLibrary::OutString = "";
+};
+	FString UDataAnalyticsBPLibrary::FinalString = "";
+
