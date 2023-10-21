@@ -230,11 +230,25 @@ FString UDataAnalyticsBPLibrary::GetAnalyticsOutput()
 
 void UDataAnalyticsBPLibrary::WriteToCSV(FString FilePath, FString InString, bool& outSuccess)
 {
-	if(!FFileHelper::SaveStringToFile(InString,*FilePath))
+	//remove Whitespace
+	FilePath = FilePath.TrimStartAndEnd();
+	
+	//Check for CSV file extension
+	const FString stringToCheck = TEXT(".csv");
+
+	if(FilePath.EndsWith(stringToCheck))
+	{
+		if(!FFileHelper::SaveStringToFile(InString,*FilePath))
+		{
+			outSuccess = false;
+			return;
+		}
+	}else
 	{
 		outSuccess = false;
+		UE_LOG(AnalyticsLog, Error, TEXT("Could not write to CSV, FilePath incorrect (Incorrect extension)"));
 		return;
-	}
+	} 
 	outSuccess = true;
 }
 
